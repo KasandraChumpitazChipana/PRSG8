@@ -8,10 +8,8 @@ pipeline {
         SONAR_ORG          = 'KasandraChumpitazChipana'
         SONAR_HOST_URL     = 'https://sonarcloud.io'
 
-        // ⚙️ Configuración dinámica
+        // ⚙️ Variables estáticas
         PROJECT_NAME       = 'ms_water_quality'
-        BUILD_DATE         = sh(returnStdout: true, script: 'date +%Y%m%d_%H%M%S').trim()
-        BRANCH_NAME        = sh(returnStdout: true, script: 'git rev-parse --abbrev-ref HEAD').trim()
     }
 
     tools {
@@ -21,9 +19,20 @@ pipeline {
 
     stages {
 
+        stage('Initialize') {
+            steps {
+                script {
+                    env.BUILD_DATE  = sh(script: "date +%Y%m%d_%H%M%S", returnStdout: true).trim()
+                    env.BRANCH_NAME = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
+                }
+                echo "🕒 Fecha de compilación: ${env.BUILD_DATE}"
+                echo "🌿 Rama actual: ${env.BRANCH_NAME}"
+            }
+        }
+
         stage('Checkout') {
             steps {
-                echo "📦 Clonando el repositorio (${BRANCH_NAME})..."
+                echo "📦 Clonando el repositorio (${env.BRANCH_NAME})..."
                 checkout scm
             }
         }
@@ -52,7 +61,7 @@ pipeline {
         }
 
         stage('SonarCloud Analysis') {
-            when { expression { env.BRANCH_NAME != 'main' || env.BRANCH_NAME != 'master' } }
+            when { expression { env.BRANCH_NAME != 'main' && env.BRANCH_NAME != 'master' } }
             steps {
                 echo '🔍 Ejecutando análisis en SonarCloud...'
                 withSonarQubeEnv('SonarCloud') {
@@ -85,9 +94,9 @@ pipeline {
                 expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
             }
             steps {
-                echo "📦 Empaquetando el artefacto final (${PROJECT_NAME}-${BUILD_DATE}.jar)..."
+                echo "📦 Empaquetando el artefacto final (${PROJECT_NAME}-${env.BUILD_DATE}.jar)..."
                 sh "mvn clean package -DskipTests"
-                sh "mv target/*.jar target/${PROJECT_NAME}-${BUILD_DATE}.jar"
+                sh "mv target/*.jar target/${PROJECT_NAME}-${env.BUILD_DATE}.jar"
 
                 echo '📂 Archivos generados en target/:'
                 sh 'ls -l target'
@@ -104,8 +113,8 @@ pipeline {
 
     post {
         success {
-            echo "✅ Pipeline completado exitosamente en la rama ${BRANCH_NAME}"
-            echo "📁 Artefacto generado: target/${PROJECT_NAME}-${BUILD_DATE}.jar"
+            echo "✅ Pipeline completado exitosamente en la rama ${env.BRANCH_NAME}"
+            echo "📁 Artefacto generado: target/${PROJECT_NAME}-${env.BUILD_DATE}.jar"
         }
         unstable {
             echo '⚠️ Pipeline inestable (revisa los tests o el análisis de calidad).'
@@ -114,7 +123,7 @@ pipeline {
             echo '❌ Falló la ejecución del pipeline.'
         }
         always {
-            echo "🕒 Pipeline finalizado: ${BUILD_DATE}"
+            echo "🕒 Pipeline finalizado: ${env.BUILD_DATE}"
         }
     }
 }
