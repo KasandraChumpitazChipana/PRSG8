@@ -1,0 +1,9 @@
+server:
+  port: 8106
+
+spring:
+  application:
+    name: vg-ms-fut
+  data:
+    mongodb:
+      uri: mongodb+srv://RosarioChumpitaz:rosariochum2025@cluster0.qazj0.mongodb.net/microservi?retryWrites=true&w=majority&appName=Cluster0
