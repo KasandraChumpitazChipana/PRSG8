@@ -21,10 +21,17 @@
 
     <properties>
         <java.version>17</java.version>
+
         <!-- Configuración SonarCloud -->
         <sonar.projectKey>KasandraChumpitazChipana_PRSG8</sonar.projectKey>
         <sonar.organization>kasandrachumpitazchipana</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+
+        <!-- Ruta del reporte JaCoCo para SonarCloud -->
+        <sonar.coverage.jacoco.xmlReportPaths>target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
+
+        <!-- Exclusiones opcionales de análisis -->
+        <!-- <sonar.exclusions>**/config/**,**/dto/**</sonar.exclusions> -->
     </properties>
 
     <dependencies>
@@ -132,9 +139,15 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/site/jacoco</outputDirectory>
+                            <reports>
+                                <report>${project.build.directory}/site/jacoco/jacoco.xml</report>
+                            </reports>
+                        </configuration>
                     </execution>
 
-                    <!-- Verifica umbrales mínimos de cobertura -->
+                    <!-- Verifica umbrales mínimos de cobertura (opcional) -->
                     <execution>
                         <id>check</id>
                         <goals>
@@ -148,8 +161,7 @@
                                         <limit>
                                             <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
-                                            <!-- Umbral reducido para evitar fallos del pipeline -->
-                                            <minimum>0.50</minimum>
+                                            <minimum>0.80</minimum>
                                         </limit>
                                     </limits>
                                 </rule>
