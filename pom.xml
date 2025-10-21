@@ -23,7 +23,7 @@
         <java.version>17</java.version>
          <!-- Configuración SonarCloud -->
         <sonar.projectKey>KasandraChumpitazChipana_PRSG8</sonar.projectKey>
-        <sonar.organization>KasandraChumpitazChipana</sonar.organization>
+        <sonar.organization>kasandrachumpitazchipana</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 

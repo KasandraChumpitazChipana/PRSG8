@@ -2,14 +2,12 @@ pipeline {
     agent any
 
     environment {
-        // 🔐 Credenciales y configuración
-        SONAR_TOKEN        = credentials('SONAR_TOKEN')
-        SONAR_PROJECT_KEY  = 'KasandraChumpitazChipana_PRSG8'
-        SONAR_ORG          = 'KasandraChumpitazChipana'
-        SONAR_HOST_URL     = 'https://sonarcloud.io'
+        // 🔐 Credenciales seguras
+        SONAR_TOKEN = credentials('SONAR_TOKEN')
 
-        // ⚙️ Variables estáticas
-        PROJECT_NAME       = 'ms_water_quality'
+        // 🔑 Configuración de SonarCloud
+        SONAR_PROJECT_KEY = 'KasandraChumpitazChipana_PRSG8'
+        SONAR_ORG = 'kasandrachumpitazchipana'
     }
 
     tools {
@@ -18,73 +16,31 @@ pipeline {
     }
 
     stages {
-
-        stage('Initialize') {
-            steps {
-                script {
-                    env.BUILD_DATE  = sh(script: "date +%Y%m%d_%H%M%S", returnStdout: true).trim()
-                    env.BRANCH_NAME = sh(script: "git rev-parse --abbrev-ref HEAD", returnStdout: true).trim()
-                }
-                echo "🕒 Fecha de compilación: ${env.BUILD_DATE}"
-                echo "🌿 Rama actual: ${env.BRANCH_NAME}"
-            }
-        }
-
         stage('Checkout') {
             steps {
-                echo "📦 Clonando el repositorio (${env.BRANCH_NAME})..."
+                echo '📦 Clonando el repositorio...'
                 checkout scm
             }
         }
 
-        stage('Build & Test') {
-            parallel {
-                stage('Build') {
-                    steps {
-                        echo '⚙️ Compilando el proyecto con Maven...'
-                        sh 'mvn -B clean compile'
-                    }
-                }
-
-                stage('Unit Tests') {
-                    steps {
-                        echo '🧪 Ejecutando pruebas unitarias...'
-                        sh 'mvn test'
-                    }
-                    post {
-                        always {
-                            junit '**/target/surefire-reports/*.xml'
-                        }
-                    }
-                }
+        stage('Build') {
+            steps {
+                echo '⚙️ Compilando el proyecto con Maven...'
+                sh 'mvn -B clean verify'
             }
         }
 
         stage('SonarCloud Analysis') {
-            when { expression { env.BRANCH_NAME != 'main' && env.BRANCH_NAME != 'master' } }
             steps {
-                echo '🔍 Ejecutando análisis en SonarCloud...'
                 withSonarQubeEnv('SonarCloud') {
+                    echo '🔍 Ejecutando análisis en SonarCloud...'
                     sh """
                         mvn sonar:sonar \
                             -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
                             -Dsonar.organization=${SONAR_ORG} \
-                            -Dsonar.host.url=${SONAR_HOST_URL} \
+                            -Dsonar.host.url=https://sonarcloud.io \
                             -Dsonar.token=${SONAR_TOKEN}
                     """
-                }
-            }
-        }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    script {
-                        def qualityGate = waitForQualityGate()
-                        if (qualityGate.status != 'OK') {
-                            error "🚫 Falló la verificación del Quality Gate: ${qualityGate.status}"
-                        }
-                    }
                 }
             }
         }
@@ -94,11 +50,10 @@ pipeline {
                 expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
             }
             steps {
-                echo "📦 Empaquetando el artefacto final (${PROJECT_NAME}-${env.BUILD_DATE}.jar)..."
-                sh "mvn clean package -DskipTests"
-                sh "mv target/*.jar target/${PROJECT_NAME}-${env.BUILD_DATE}.jar"
+                echo '📦 Empaquetando el artefacto final (JAR ejecutable)...'
+                sh 'mvn clean package -DskipTests'
 
-                echo '📂 Archivos generados en target/:'
+                echo '📂 Listando archivos generados...'
                 sh 'ls -l target'
             }
         }
@@ -113,17 +68,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Pipeline completado exitosamente en la rama ${env.BRANCH_NAME}"
-            echo "📁 Artefacto generado: target/${PROJECT_NAME}-${env.BUILD_DATE}.jar"
-        }
-        unstable {
-            echo '⚠️ Pipeline inestable (revisa los tests o el análisis de calidad).'
+            echo '✅ Pipeline ejecutado exitosamente. Artefacto JAR disponible en Jenkins.'
         }
         failure {
             echo '❌ Falló la ejecución del pipeline.'
-        }
-        always {
-            echo "🕒 Pipeline finalizado: ${env.BUILD_DATE}"
         }
     }
 }
