@@ -69,9 +69,17 @@ pipeline {
     post {
         success {
             echo '✅ Pipeline ejecutado exitosamente. Artefacto JAR disponible en Jenkins.'
+            slackSend(
+                channel: '#general-vg25',
+                message: "✅ *Build exitoso* en Jenkins.\nProyecto: *KasandraChumpitazChipana_PRSG8*\n📦 Artefacto generado correctamente en la rama *${env.GIT_BRANCH}*."
+            )
         }
         failure {
             echo '❌ Falló la ejecución del pipeline.'
+            slackSend(
+                channel: '#general-vg25',
+                message: "❌ *Build fallido* en Jenkins.\nProyecto: *KasandraChumpitazChipana_PRSG8*\n🚨 Revisar logs para más detalles.\nRama: *${env.GIT_BRANCH}*."
+            )
         }
     }
 }
